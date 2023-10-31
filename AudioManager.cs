@@ -1,79 +1,47 @@
 ﻿using NAudio.CoreAudioApi;
 using NAudio.Wave;
-using NAudio.Wave.Compression;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace SimpleRecorder
 {
-    public class AudioManager
+    public class AudioManager : IDisposable
     {
-        public string SaveFilePath { get; set; }
-        public string MyNewAudioFileName { get; set; }
+        public string SaveFilePath { get; private set; }
+        public string MyNewAudioFileName { get; private set; }
         private WaveInEvent waveSource = null;
-
         private WaveFileWriter waveFile = null;
 
         public void InitRecorder()
         {
-            SaveFilePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\MyRecordedWaves\";
-            if (!Directory.Exists(SaveFilePath))
-                Directory.CreateDirectory(SaveFilePath);
+            SaveFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "MyRecordedWaves");
+            Directory.CreateDirectory(SaveFilePath); // CreateDirectory is a no-op if directory exists
         }
 
         public void OpenRecordedAudioFolder() => Process.Start("explorer.exe", SaveFilePath);
 
-        public void OpenRecordedAudioFile()
-        {
-            if (Directory.Exists(SaveFilePath))
-            {
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    Arguments = MyNewAudioFileName,
-                    FileName = "explorer.exe"
-                };
-
-                Process.Start(startInfo);
-            }
-        }
+        public void OpenRecordedAudioFile()=>
+                Process.Start("explorer.exe", MyNewAudioFileName);
+            
+        
 
         public void StartRecording()
         {
-            MyNewAudioFileName = SaveFilePath + new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() + ".wav";
+            MyNewAudioFileName = Path.Combine(SaveFilePath, $"{DateTime.UtcNow:yyyyMMdd_HHmmss}.wav");
             waveSource = new WaveInEvent();
             waveSource.WaveFormat = new WaveFormat(44100, 1);
-            waveSource.DataAvailable += new EventHandler<WaveInEventArgs>(waveSource_DataAvailable);
-            waveSource.RecordingStopped += new EventHandler<StoppedEventArgs>(waveSource_RecordingStopped);
+            waveSource.DataAvailable += waveSource_DataAvailable;
+            waveSource.RecordingStopped += waveSource_RecordingStopped;
 
             waveFile = new WaveFileWriter(MyNewAudioFileName, waveSource.WaveFormat);
             waveSource.StartRecording();
         }
 
-        private void waveSource_RecordingStopped(object? sender, StoppedEventArgs e)
-        {
-            if (waveSource != null)
-            {
-                waveSource.Dispose();
-                waveSource = null;
-            }
-
-            if (waveFile != null)
-            {
-                waveFile.Dispose();
-                waveFile = null;
-            }
-        }
+        private void waveSource_RecordingStopped(object sender, StoppedEventArgs e) => DisposeResources();
 
         private void waveSource_DataAvailable(object sender, WaveInEventArgs e)
         {
-            //WaveFileWriter.Write(e.Buffer, 0, e.BytesRecorded);
-
-            //2
-
             if (waveFile != null)
             {
                 waveFile.Write(e.Buffer, 0, e.BytesRecorded);
@@ -83,10 +51,20 @@ namespace SimpleRecorder
 
         public void StopRecording()
         {
-            if (waveSource != null)
-            {
-                waveSource.StopRecording();
-            }
+            waveSource?.StopRecording();
+        }
+
+        public void Dispose()
+        {
+            DisposeResources();
+        }
+
+        private void DisposeResources()
+        {
+            waveSource?.Dispose();
+            waveSource = null;
+            waveFile?.Dispose();
+            waveFile = null;
         }
     }
 }

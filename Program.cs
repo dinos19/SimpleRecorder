@@ -5,44 +5,33 @@ audio.InitRecorder();
 MainAppLoop();
 void MainAppLoop()
 {
-    Console.WriteLine("Choose an action.\n1) Open recorded audios folder\n2) Record a new audio\n3) Exit");
-    var startingOption = Console.ReadLine();
-    switch (startingOption)
+    while (true)
     {
-        case "1":
-            audio.OpenRecordedAudioFolder();
-            break;
+        Console.WriteLine("Choose an action.\n1) Open recorded audios folder\n2) Record a new audio\n3) Play last recorded\n4) Exit");
+        var option = Console.ReadLine();
+        switch (option)
+        {
+            case "1":
+                audio.OpenRecordedAudioFolder();
+                break;
 
-        case "2":
-            audio.StartRecording();
-            Console.WriteLine("Starting recording.. Press anything to stop it.");
+            case "2":
+                audio.StartRecording();
+                Console.WriteLine("Starting recording.. Press anything to stop it.");
+                Console.ReadLine();
+                audio.StopRecording();
+                break;
 
-            Console.ReadLine();
+            case "3":
+                audio.OpenRecordedAudioFile();
+                break;
 
-            audio.StopRecording();
-            break;
+            case "4":
+                return;
 
-        case "3":
-            return;
-    };
-
-    SecondaryAppLoop();
-}
-
-void SecondaryAppLoop()
-{
-    Console.WriteLine("Choose an action.\n1) Play recorded\n2) Start over\n3) Exit");
-
-    var afterRecordOptions = Console.ReadLine();
-    switch (afterRecordOptions)
-    {
-        case "1":
-            audio.OpenRecordedAudioFile();
-            break;
-
-        case "3":
-            return;
-    };
-
-    MainAppLoop();
+            default:
+                Console.WriteLine("Invalid option. Please try again.");
+                break;
+        }
+    }
 }
